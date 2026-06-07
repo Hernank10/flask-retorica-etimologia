@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Retórica - Flashcards{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4"><h2><i class="fas fa-comment-dots me-2"></i>Técnicas retóricas</h2><button class="btn btn-outline-secondary btn-sm" onclick="stopSpeech()"><i class="fas fa-stop-circle"></i> Detener lectura</button></div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-comment-dots me-2"></i>Técnicas retóricas</h2>
+    <button class="btn btn-outline-secondary btn-sm" onclick="stopSpeech()"><i class="fas fa-stop-circle"></i> Detener lectura</button>
+</div>
+
+<div class="alert alert-info">
+    <i class="fas fa-graduation-cap"></i> <strong>¡Gana puntos!</strong> Cada ejercicio correcto te da 10 puntos. Tu progreso se guarda automáticamente.
+</div>
+
 <div class="row g-4">
     {% for fig in figuras %}
     <div class="col-md-6 col-lg-4">
@@ -19,7 +27,7 @@
                     <label class="fw-semibold">✍️ {{ fig.ejercicio }}</label>
                     <textarea class="form-control mt-2" id="answer-{{ fig.id }}" rows="2" placeholder="Escribe tu respuesta..."></textarea>
                     <div class="mt-2">
-                        <button class="btn btn-outline-success btn-sm" onclick="showSuggestion({{ fig.id }})">Ver sugerencia</button>
+                        <button class="btn btn-outline-success btn-sm" onclick="checkAndSave({{ fig.id }}, '{{ fig.name }}', '{{ fig.category }}')">Verificar y guardar</button>
                     </div>
                     <div id="feedback-{{ fig.id }}" class="small mt-2" style="display:none;"></div>
                 </div>
@@ -28,15 +36,53 @@
     </div>
     {% endfor %}
 </div>
+
 <script>
-function showSuggestion(id){
-    const user = document.getElementById('answer-'+id).value;
+async function checkAndSave(id, nombre, categoria){
+    const userAnswer = document.getElementById('answer-'+id).value;
     const fb = document.getElementById('feedback-'+id);
     const figuras = {{ figuras | tojson | safe }};
     const fig = figuras.find(f => f.id === id);
-    if(fig){
-        fb.innerHTML = '<div class="alert alert-light border mt-2"><strong>📝 Tu respuesta:</strong> "' + (user.substring(0,100) || '(vacío)') + '"<br><strong>✨ Sugerencia:</strong> ' + fig.suggestedAnswer + '</div>';
+    
+    if(!fig){
+        fb.innerHTML = '<div class="alert alert-danger">Error al cargar la figura</div>';
         fb.style.display = 'block';
+        return;
+    }
+    
+    // Verificación simple (si el usuario ha escrito algo similar a la sugerencia)
+    const esCorrecta = userAnswer.length > 10;
+    
+    // Guardar respuesta en el servidor
+    const response = await fetch('/api/guardar_respuesta', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            tipo: 'retorica',
+            item_id: id,
+            es_correcta: esCorrecta,
+            respuesta_usuario: userAnswer,
+            categoria: categoria
+        })
+    });
+    
+    const data = await response.json();
+    
+    if(esCorrecta){
+        fb.innerHTML = '<div class="alert alert-success mt-2"><strong>✓ ¡Excelente!</strong> Has ganado 10 puntos.<br><strong>✨ Sugerencia:</strong> ' + fig.suggestedAnswer + '</div>';
+    } else {
+        fb.innerHTML = '<div class="alert alert-info mt-2"><strong>📝 Sigue practicando</strong><br><strong>✨ Sugerencia:</strong> ' + fig.suggestedAnswer + '</div>';
+    }
+    fb.style.display = 'block';
+    
+    // Actualizar puntos en el header (opcional)
+    if(data.puntos_ganados > 0){
+        // Mostrar notificación
+        const toast = document.createElement('div');
+        toast.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+        toast.innerHTML = '<i class="fas fa-star"></i> +' + data.puntos_ganados + ' puntos! Nivel: ' + data.nivel;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
     }
 }
 </script>

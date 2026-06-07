@@ -16,6 +16,39 @@
         .btn-sound:hover { background: #d4af37; color: #1e2a3a; }
         .original-script { font-family: 'Times New Roman', serif; font-size: 1.1rem; background: #f0ece4; padding: 0.2rem 0.6rem; border-radius: 20px; }
         .hero-section { background: linear-gradient(135deg, #1f3b2c 0%, #0f2a1e 100%); color: white; padding: 2rem 0; margin-bottom: 2rem; border-radius: 0 0 1rem 1rem; }
+        .puntos-badge { background: #d4af37; color: #1e2a3a; font-weight: bold; }
+        
+        .float-voice-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 1000;
+            transition: 0.3s;
+        }
+        .float-voice-btn:hover {
+            background: #d4af37;
+            color: #1e2a3a;
+            transform: scale(1.1);
+        }
+        .voice-controls {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            background: white;
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 999;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -27,28 +60,148 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('retorica') }}"><i class="fas fa-comment-dots"></i> Retórica</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('etimologia') }}"><i class="fas fa-language"></i> Etimología</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('examen') }}"><i class="fas fa-pen-alt"></i> Examen</a></li>
+                    <!-- Verificar si el usuario está autenticado -->
+                    {% if current_user and current_user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('retorica') }}"><i class="fas fa-comment-dots"></i> Retórica</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('etimologia') }}"><i class="fas fa-language"></i> Etimología</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('examen') }}"><i class="fas fa-pen-alt"></i> Examen</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                        {% if current_user.is_admin %}
+                        <li class="nav-item"><a class="nav-link text-warning" href="{{ url_for('admin_panel') }}"><i class="fas fa-shield-alt"></i> Admin</a></li>
+                        {% endif %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> {{ current_user.username }}
+                                <span class="badge puntos-badge ms-1">{{ current_user.total_points }} pts</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Mi progreso</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> Iniciar sesión</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('registro') }}"><i class="fas fa-user-plus"></i> Registrarse</a></li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
-    <main class="container my-4">{% block content %}{% endblock %}</main>
-    <footer class="footer py-4 text-center"><div class="container"><small><i class="fas fa-microphone-alt"></i> Lector de voz integrado · Técnicas retóricas · Raíces grecolatinas</small></div></footer>
+    <main class="container my-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="footer py-4 text-center">
+        <div class="container"><small><i class="fas fa-microphone-alt"></i> Lector de voz integrado · Técnicas retóricas · Raíces grecolatinas</small></div>
+    </footer>
+
+    <!-- Botón flotante de lectura (solo si hay voz disponible) -->
+    <button class="float-voice-btn" id="floatVoiceBtn" onclick="toggleVoiceControls()">
+        <i class="fas fa-head-side-vr fa-2x"></i>
+    </button>
+    <div class="voice-controls" id="voiceControls">
+        <div class="d-flex flex-column gap-2">
+            <button class="btn btn-sm btn-primary" onclick="readPageContent()"><i class="fas fa-play"></i> Leer página</button>
+            <button class="btn btn-sm btn-secondary" onclick="stopSpeech()"><i class="fas fa-stop"></i> Detener</button>
+            <select id="voiceSelect" class="form-select form-select-sm" onchange="setVoice()">
+                <option value="">Voz por defecto</option>
+            </select>
+            <input type="range" id="rateControl" min="0.5" max="2" step="0.1" value="0.9" onchange="setRate()">
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentUtterance = null;
+        let availableVoices = [];
+        
+        function toggleVoiceControls() {
+            const controls = document.getElementById('voiceControls');
+            controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+            if (availableVoices.length === 0) loadVoices();
+        }
+        
+        function loadVoices() {
+            availableVoices = window.speechSynthesis.getVoices();
+            const select = document.getElementById('voiceSelect');
+            const spanishVoices = availableVoices.filter(v => v.lang.startsWith('es'));
+            const voicesToShow = spanishVoices.length > 0 ? spanishVoices : availableVoices;
+            select.innerHTML = '<option value="">Voz por defecto</option>' + 
+                voicesToShow.map(v => `<option value="${v.name}">${v.name} (${v.lang})</option>`).join('');
+        }
+        
+        if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            setTimeout(loadVoices, 100);
+        }
+        
+        function setVoice() {
+            const select = document.getElementById('voiceSelect');
+            const voiceName = select.value;
+            if (voiceName && currentUtterance) {
+                const voice = availableVoices.find(v => v.name === voiceName);
+                if (voice) currentUtterance.voice = voice;
+            }
+        }
+        
+        function setRate() {
+            const rate = document.getElementById('rateControl').value;
+            if (currentUtterance) currentUtterance.rate = parseFloat(rate);
+        }
+        
         function speakText(text) { 
             if(window.speechSynthesis) { 
                 if(currentUtterance) window.speechSynthesis.cancel(); 
                 currentUtterance = new SpeechSynthesisUtterance(text); 
                 currentUtterance.lang = 'es-ES'; 
-                currentUtterance.rate = 0.9; 
+                currentUtterance.rate = parseFloat(document.getElementById('rateControl').value || 0.9);
+                const voiceName = document.getElementById('voiceSelect').value;
+                if (voiceName) {
+                    const voice = availableVoices.find(v => v.name === voiceName);
+                    if (voice) currentUtterance.voice = voice;
+                }
                 window.speechSynthesis.speak(currentUtterance); 
-            } 
+            } else {
+                alert("Tu navegador no soporta la síntesis de voz");
+            }
         }
-        function stopSpeech() { if(window.speechSynthesis) window.speechSynthesis.cancel(); }
+        
+        function stopSpeech() { 
+            if(window.speechSynthesis) window.speechSynthesis.cancel(); 
+            currentUtterance = null;
+        }
+        
+        function readPageContent() {
+            let textToRead = '';
+            const mainContent = document.querySelector('main');
+            if (mainContent) {
+                const elements = mainContent.querySelectorAll('h1, h2, h3, h4, h5, p, li, .card-text, .theory-box, .example-box, .exercise-area label, .alert');
+                elements.forEach(el => {
+                    if (el.innerText && el.innerText.trim().length > 0) {
+                        textToRead += el.innerText + '. ';
+                    }
+                });
+            }
+            if (textToRead.length > 0 && textToRead.length < 3000) {
+                speakText(textToRead);
+            } else if (textToRead.length >= 3000) {
+                speakText(textToRead.substring(0, 2500) + "... (contenido truncado)");
+            } else {
+                speakText('No hay contenido para leer en esta página');
+            }
+        }
+        
         window.addEventListener('beforeunload', stopSpeech);
     </script>
     {% block scripts %}{% endblock %}

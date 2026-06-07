@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Panel de Administración{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h2><i class="fas fa-shield-alt me-2"></i>Panel de Administración</h2>
+    <p class="text-muted">Gestión de usuarios, estadísticas y contenido</p>
+</div>
+
+<div class="alert alert-warning">
+    <i class="fas fa-info-circle"></i> Usuario administrador por defecto: <strong>admin / admin123</strong>
+</div>
+
+<!-- Tarjetas de resumen -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x mb-2"></i>
+                <h3>{{ total_usuarios }}</h3>
+                <p class="mb-0">Usuarios Registrados</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-tasks fa-3x mb-2"></i>
+                <h3>{{ total_respuestas }}</h3>
+                <p class="mb-0">Ejercicios Realizados</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-star fa-3x mb-2"></i>
+                <h3>{{ total_puntos }}</h3>
+                <p class="mb-0">Puntos Totales</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-3x mb-2"></i>
+                <button class="btn btn-light btn-sm" onclick="cargarEstadisticas()">Actualizar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de usuarios -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5><i class="fas fa-list me-2"></i>Gestión de Usuarios</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>ID</th><th>Usuario</th><th>Email</th><th>Respuestas</th><th>Puntos</th><th>Nivel</th><th>Admin</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for u in usuarios %}
+                    <tr>
+                        <td>{{ u.id }}</td>
+                        <td><i class="fas fa-user-circle"></i> {{ u.username }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>{{ u.total_respuestas }} ({{ u.correctas }} ✓)</td>
+                        <td>{{ u.puntos }}</td>
+                        <td><span class="badge bg-secondary">{{ u.nivel }}</span></td>
+                        <td>{% if u.is_admin %}<span class="badge bg-danger">Admin</span>{% else %}<span class="badge bg-secondary">Usuario</span>{% endif %}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('toggle_admin', user_id=u.id) }}" style="display:inline">
+                                <button class="btn btn-sm btn-outline-warning"><i class="fas fa-user-shield"></i></button>
+                            </form>
+                            <form method="POST" action="{{ url_for('delete_user', user_id=u.id) }}" style="display:inline">
+                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+async function cargarEstadisticas() {
+    const response = await fetch('/admin/estadisticas');
+    const data = await response.json();
+    alert('Estadísticas actualizadas. Revisa la consola para más detalles.');
+    console.log(data);
+}
+</script>
+{% endblock %}

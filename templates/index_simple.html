@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero-section text-center py-5">
+    <div class="container">
+        <h1 class="display-4 fw-bold"><i class="fas fa-graduation-cap me-3"></i>Aprende Retórica y Etimología</h1>
+        <p class="lead">Plataforma interactiva con lector de voz, ejercicios y seguimiento de progreso</p>
+        <hr class="w-25 mx-auto">
+        <a href="{{ url_for('login') }}" class="btn btn-light btn-lg mx-2">Iniciar sesión</a>
+        <a href="{{ url_for('registro') }}" class="btn btn-outline-light btn-lg mx-2">Registrarse</a>
+    </div>
+</div>
+<div class="row mt-5">
+    <div class="col-md-6"><div class="card text-center p-4"><i class="fas fa-comment-dots fa-4x text-success"></i><h3>100 técnicas retóricas</h3><p>Aprende anáfora, metáfora, ironía y más con ejercicios prácticos.</p></div></div>
+    <div class="col-md-6"><div class="card text-center p-4"><i class="fas fa-language fa-4x text-warning"></i><h3>100 raíces grecolatinas</h3><p>Descubre el origen de las palabras con escritura original.</p></div></div>
+</div>
+{% endblock %}
