@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Etimología - Raíces{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4"><h2><i class="fas fa-scroll me-2"></i>Raíces grecolatinas</h2><button class="btn btn-outline-secondary btn-sm" onclick="stopSpeech()"><i class="fas fa-stop-circle"></i> Detener lectura</button></div>
+<div class="row g-4">
+    {% for r in raices %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card card-flash h-100">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <div class="d-flex justify-content-between flex-wrap">
+                    <div>
+                        <h4 class="fw-bold d-inline-block me-2">{{ r.element }}</h4>
+                        <span class="badge bg-warning text-dark">{{ r.origin }}</span>
+                        <div class="mt-1"><span class="original-script small">{{ r.originalScript }}</span></div>
+                    </div>
+                    <button class="btn btn-sound btn-sm" onclick="speakText('Raíz {{ r.element }}. Significado {{ r.meaning }}. Ejemplos {{ r.examples }}')"><i class="fas fa-volume-up"></i></button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="bg-light p-2 rounded mb-2"><strong>Significado:</strong> {{ r.meaning }}</div>
+                <div class="bg-info bg-opacity-10 p-2 rounded mb-3"><strong>Ejemplos:</strong> {{ r.examples }}</div>
+                <div class="exercise-area">
+                    <label class="fw-semibold">📝 {{ r.exercise }}</label>
+                    <textarea class="form-control mt-2" id="answer-{{ r.id }}" rows="2" placeholder="Crea tu palabra..."></textarea>
+                    <div class="mt-2">
+                        <button class="btn btn-outline-info btn-sm" onclick="checkEtymology({{ r.id }})">Autoevaluación</button>
+                    </div>
+                    <div id="fb-{{ r.id }}" class="small mt-2" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<script>
+function checkEtymology(id){
+    const user = document.getElementById('answer-'+id).value;
+    const fb = document.getElementById('fb-'+id);
+    const raices = {{ raices | tojson | safe }};
+    const r = raices.find(r => r.id === id);
+    if(r){
+        fb.innerHTML = '<div class="alert alert-secondary mt-2"><strong>📖 ' + r.evalQuestion + '</strong><br><strong>Tu respuesta:</strong> "' + (user.substring(0,100) || '(vacía)') + '"<br><strong>✅ Sugerida:</strong> ' + r.suggestedAnswer + '</div>';
+        fb.style.display = 'block';
+    }
+}
+</script>
+{% endblock %}

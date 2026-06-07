@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6"><div class="card shadow-lg"><div class="card-header bg-primary text-white text-center"><h4><i class="fas fa-file-alt"></i> Configurar examen</h4></div><div class="card-body p-4"><form method="POST"><div class="mb-4"><label class="form-label fw-bold">Temática</label><select name="tema" class="form-select"><option value="retorica">🎭 Retórica - Figuras</option><option value="etimologia">📜 Etimología - Raíces</option></select></div><div class="mb-4"><label class="form-label fw-bold">Número de preguntas</label><input type="number" name="num_preguntas" class="form-control" value="10" min="5" max="50"></div><button type="submit" class="btn btn-success w-100">Generar examen</button></form></div></div></div></div>
+{% endblock %}
